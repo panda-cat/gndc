@@ -10,13 +10,13 @@ import (
 	"sync"
 
 	"github.com/mitchellh/mapstructure"
-	"github.com/nornir-automation/gornir/v2/pkg/config"
-	"github.com/nornir-automation/gornir/v2/pkg/gornir"
-	"github.com/nornir-automation/gornir/v2/pkg/inventory"
-	"github.com/nornir-automation/gornir/v2/pkg/plugins/connections/netconf"
-	"github.com/nornir-automation/gornir/v2/pkg/plugins/connections/ssh"
-	"github.com/nornir-automation/gornir/v2/pkg/plugins/runners/goexec"
-	"github.com/nornir-automation/gornir/v2/pkg/plugins/tasks/command"
+	"github.com/nornir-automation/gornir/pkg/gornir"
+	"github.com/nornir-automation/gornir/pkg/plugins/connection"
+	"github.com/nornir-automation/gornir/pkg/plugins/inventory"
+	"github.com/nornir-automation/gornir/pkg/plugins/logger"
+	"github.com/nornir-automation/gornir/pkg/plugins/output"
+	"github.com/nornir-automation/gornir/pkg/plugins/runner"
+	"github.com/nornir-automation/gornir/pkg/plugins/task"
 	"gopkg.in/yaml.v3"
 )
 
