@@ -1,0 +1,42 @@
+hosts:
+  device1:
+    hostname: 192.168.1.10
+    platform: ios
+    connection_options:
+      ssh:
+        username: your_username
+        password: your_password
+    cmds:
+      - show version
+      - show ip interface brief
+  device2:
+    hostname: 192.168.1.20
+    platform: junos
+    connection_options:
+      netconf:
+        username: your_username
+        password: your_password
+      ssh: # Fallback for non-netconf commands
+        username: your_username
+        password: your_password
+    cmds:
+      - show version | no-more
+      - show interfaces terse | no-more
+  linux-server:
+    hostname: 192.168.1.30
+    platform: linux
+    connection_options:
+      ssh:
+        username: your_username
+        password: your_password
+    cmds:
+      - uname -a
+      - ls -l /tmp
+groups:
+  routers:
+    hosts:
+      - device1
+      - device2
+  servers:
+    hosts:
+      - linux-server
