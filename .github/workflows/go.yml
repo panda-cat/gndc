@@ -4,38 +4,50 @@ on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Or any suitable runner
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
-        goarch: [amd64, arm64]
-        exclude:
-          - goos: darwin
-            goarch: arm64 # Exclude if you don't need this combination
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        go_version: ['1.20', '1.21']
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: 'stable' # Or your desired Go version
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ matrix.go_version }}
 
-      - name: Get dependencies
-        run: go mod tidy
-        working-directory: . # If your go.mod is in the root
+    - name: Get dependencies
+      run: go mod download
 
-      - name: Build
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: |
-          go build -v -o my-app-${{ matrix.goos }}-${{ matrix.goarch }}$([ "$GOOS" == "windows" ] && echo ".exe" || echo "") .
+    - name: Tidy dependencies
+      run: go mod tidy
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: my-app-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: my-app-${{ matrix.goos }}-${{ matrix.goarch }}${{ (matrix.goos == 'windows') && '.exe' || '' }}
+    - name: Build
+      env:
+        GOOS: ${{ matrix.os == 'windows-latest' && 'windows' || matrix.os == 'macos-latest' && 'darwin' || 'linux' }}
+        GOARCH: amd64
+      run: go build -v -o my-app${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+
+    - name: Upload Artifact (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: my-app-linux-amd64
+        path: my-app
+
+    - name: Upload Artifact (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: my-app-windows-amd64
+        path: my-app.exe
+
+    - name: Upload Artifact (macOS)
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v3
+      with:
+        name: my-app-darwin-amd64
+        path: my-app
