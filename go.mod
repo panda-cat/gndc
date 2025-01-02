@@ -1,4 +1,4 @@
-module your-github-username/your-repository-name
+module panda-cat/gndc
 
 go 1.18
 
