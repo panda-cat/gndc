@@ -24,7 +24,7 @@ jobs:
           go-version: 'stable' # Or your desired Go version
 
       - name: Get dependencies
-        run: go mod tidy && cat go.sum
+        run: go mod tidy
         working-directory: . # If your go.mod is in the root
 
       - name: Build
