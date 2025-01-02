@@ -1,42 +1,34 @@
-hosts:
-  device1:
-    hostname: 192.168.1.10
-    platform: ios
-    connection_options:
-      ssh:
-        username: your_username
-        password: your_password
-    cmds:
+platform_defaults:
+  cisco_ios:
+    - show ip interface brief
+    - show running-config | include hostname
+  junos:
+    - show interfaces terse
+    - show configuration | display set | match system host-name
+  linux:
+    - ip addr
+    - hostname
+
+nodes:
+  router1:
+    hostname: 192.168.1.1
+    port: 22
+    username: admin
+    password: password123
+    platform: cisco_ios
+    commands: # 特定于 router1 的命令，会覆盖或补充默认命令
       - show version
-      - show ip interface brief
-  device2:
-    hostname: 192.168.1.20
-    platform: junos
-    connection_options:
-      netconf:
-        username: your_username
-        password: your_password
-      ssh: # Fallback for non-netconf commands
-        username: your_username
-        password: your_password
-    cmds:
-      - show version | no-more
-      - show interfaces terse | no-more
-  linux-server:
-    hostname: 192.168.1.30
+  switch2:
+    hostname: 192.168.1.2
+    port: 22
+    username: admin
+    password: password123
+    platform: cisco_ios
+    commands: # 特定于 switch2 的命令
+      - show inventory
+  server3:
+    hostname: 192.168.1.3
+    port: 22
+    username: user
+    password: password456
     platform: linux
-    connection_options:
-      ssh:
-        username: your_username
-        password: your_password
-    cmds:
-      - uname -a
-      - ls -l /tmp
-groups:
-  routers:
-    hosts:
-      - device1
-      - device2
-  servers:
-    hosts:
-      - linux-server
