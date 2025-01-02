@@ -4,190 +4,110 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"log"
 	"os"
-	"runtime"
-	"sync"
 
-"github.com/mitchellh/mapstructure"
-"github.com/nornir-automation/gornir/pkg/gornir"
-"github.com/nornir-automation/gornir/pkg/plugins/connection"
-"github.com/nornir-automation/gornir/pkg/plugins/inventory"
-"github.com/nornir-automation/gornir/pkg/plugins/runner"
-"github.com/nornir-automation/gornir/pkg/plugins/task"
-"gopkg.in/yaml.v3"
-
-
+	"github.com/nornir-automation/gornir/pkg/gornir"
+	"github.com/nornir-automation/gornir/pkg/plugins/connection"
+	"github.com/nornir-automation/gornir/pkg/plugins/inventory"
+	"github.com/nornir-automation/gornir/pkg/plugins/logger"
+	"github.com/nornir-automation/gornir/pkg/plugins/output"
+	"github.com/nornir-automation/gornir/pkg/plugins/runner"
+	"github.com/nornir-automation/gornir/pkg/plugins/task"
+	"gopkg.in/yaml.v3"
 )
+
+// InventoryData 定义了合并后的 hosts.yaml 的结构
+type InventoryData struct {
+	PlatformDefaults map[string][]string `yaml:"platform_defaults"`
+	Nodes            map[string]HostData   `yaml:"nodes"`
+}
+
+// HostData 定义了 nodes 下每个主机的结构
+type HostData struct {
+	Hostname string            `yaml:"hostname"`
+	Port     int               `yaml:"port"`
+	Username string            `yaml:"username"`
+	Password string            `yaml:"password"`
+	Platform string            `yaml:"platform"`
+	Commands []string          `yaml:"commands"` // 特定于主机的命令
+	Data     map[string]interface{} `yaml:",inline"` // 允许其他自定义数据
+}
 
 func main() {
-	// Define command-line flag for the inventory file
-	inventoryFile := flag.String("i", "devices.yaml", "Path to the devices YAML file")
+	log := logger.NewLogrus(false)
+
+	inventoryFile := flag.String("i", "hosts.yaml", "Path to the inventory YAML file")
 	flag.Parse()
 
-// Load devices from the YAML file
-inv, err := loadInventory(*inventoryFile)
-if err != nil {
-	log.Fatalf("Error loading inventory from file '%s': %v", *inventoryFile, err)
-}
-
-// Create a Gornir instance
-gn, err := gornir.New(&config.Config{}, inv,
-	gornir.WithRunner(goexec.New(&goexec.Options{NumWorkers: runtime.NumCPU()})),
-)
-if err != nil {
-	log.Fatal(err)
-}
-defer gn.Close()
-
-// Execute commands concurrently on each device
-var wg sync.WaitGroup
-for _, host := range inv.Hosts {
-	wg.Add(1)
-	go func(h *inventory.Host) {
-		defer wg.Done()
-		executeCommands(gn, h)
-	}(host)
-}
-
-// Wait for all commands to finish
-wg.Wait()
-fmt.Println("All commands executed.")
-
-
-}
-
-func executeCommands(gn *gornir.Gornir, h *inventory.Host) {
-	fmt.Printf("--- Executing commands on host: %s (%s) ---\n", h.Hostname, h.Platform)
-	cmds, ok := h.Vars["cmds"].([]interface{})
-	if !ok {
-		fmt.Printf("No commands defined for host: %s\n", h.Hostname)
-		return
+	plugin := inventory.FromFile(inventory.YAML, *inventoryFile)
+	inv, err := plugin.Create()
+	if err != nil {
+		log.Fatal(err)
 	}
 
-for _, cmdRaw := range cmds {
-	if cmd, ok := cmdRaw.(string); ok {
-		runCommand(gn, h, cmd)
-	} else {
-		fmt.Printf("Invalid command format for host %s: %v\n", h.Hostname, cmdRaw)
+	// 读取包含命令的完整 inventory 文件
+	data, err := os.ReadFile(*inventoryFile)
+	if err != nil {
+		log.Fatalf("Failed to read inventory file: %v", err)
 	}
-}
-fmt.Println()
 
+	var inventoryData InventoryData
+	err = yaml.Unmarshal(data, &inventoryData)
+	if err != nil {
+		log.Fatalf("Failed to unmarshal inventory data: %v", err)
+	}
 
-}
+	gr := gornir.New().WithInventory(inv).WithLogger(log).WithRunner(runner.Parallel())
 
-func runCommand(gn *gornir.Gornir, h *inventory.Host, cmd string) {
-	results, err := gn.RunSync(context.Background(), 
-		func(ctx context.Context, host *inventory.Host) (*gornir.JobResult, error) {
-			return host.Run(ctx, command.RunCommand(cmd))
-		}, 
-		gornir.WithHosts(h.Name), 
+	// Open an SSH connection towards the devices
+	results, err := gr.RunSync(
+		context.Background(),
+		&connection.SSHOpen{},
 	)
 	if err != nil {
-		fmt.Printf("Error running command '%s' on host '%s': %v\n", cmd, h.Hostname, err)
-		return
+		log.Fatal(err)
 	}
 
-for _, res := range results {
-	if res.Error() != nil {
-		fmt.Printf("Error executing command '%s' on host '%s': %v\n", cmd, h.Hostname, res.Error())
-	} else {
-		printResult(cmd, res)
-	}
-}
-
-
-}
-
-func printResult(cmd string, res *gornir.JobResult) {
-	cmdResult := res.Result().(*command.CommandResult)
-	fmt.Printf("Command: %s\nOutput:\n%s\n", cmd, cmdResult.Stdout)
-	if cmdResult.Stderr != "" {
-		fmt.Printf("Stderr:\n%s\n", cmdResult.Stderr)
-	}
-}
-
-func loadInventory(filename string) (*inventory.Inventory, error) {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
-	}
-
-var yInv struct {
-	Hosts  map[string]yamlHost `yaml:"hosts"`
-	Groups map[string]yamlGroup `yaml:"groups"`
-}
-
-if err := yaml.Unmarshal(data, &yInv); err != nil {
-	return nil, fmt.Errorf("failed to unmarshal YAML: %w", err)
-}
-
-inv := &inventory.Inventory{Hosts: map[string]*inventory.Host{}, Groups: map[string]*inventory.Group{}}
-
-// Populate inventory from YAML
-for name, yHost := range yInv.Hosts {
-	inv.Hosts[name] = &inventory.Host{
-		Name:            name,
-		Hostname:        yHost.Hostname,
-		Platform:        yHost.Platform,
-		ConnectionOptions: parseConnectionOptions(yHost.ConnectionOptions),
-		Vars: map[string]interface{}{"cmds": yHost.Cmds},
-	}
-}
-
-for name, yGroup := range yInv.Groups {
-	inv.Groups[name] = &inventory.Group{Name: name}
-	for _, hostName := range yGroup.Hosts {
-		if h, ok := inv.Hosts[hostName]; ok {
-			inv.Groups[name].Hosts = append(inv.Groups[name].Hosts, h)
+	// defer closing the SSH connection we just opened
+	defer func() {
+		results, err = gr.RunSync(
+			context.Background(),
+			&connection.SSHClose{},
+		)
+		if err != nil {
+			log.Fatal(err)
 		}
-	}
-}
+	}()
 
-createAllGroup(inv)
-return inv, nil
+	// 遍历主机并执行命令
+	for name, host := range inventoryData.Nodes {
+		var commandsToExecute []string
 
+		// 添加平台默认命令
+		if defaultCommands, ok := inventoryData.PlatformDefaults[host.Platform]; ok {
+			commandsToExecute = append(commandsToExecute, defaultCommands...)
+		}
 
-}
+		// 添加主机特定的命令，可以根据需求选择覆盖还是追加
+		if host.Commands != nil {
+			// 这里选择追加主机特定命令
+			commandsToExecute = append(commandsToExecute, host.Commands...)
+		}
 
-func parseConnectionOptions(options map[string]yamlConnectionOptions) map[string]interface{} {
-	connOptions := make(map[string]interface{})
-	for connType, opts := range options {
-		if connType == "ssh" {
-			sshOpts := &ssh.Options{}
-			if err := mapstructureDecode(opts, sshOpts); err == nil {
-				connOptions["ssh"] = sshOpts
+		if len(commandsToExecute) > 0 {
+			for _, cmd := range commandsToExecute {
+				results, err = gr.RunSync(
+					context.Background(),
+					&task.RunCommand{Command: cmd}, // 使用 RunCommand
+					gornir.WithHosts(name),         // 指定在哪个主机上运行
+				)
+				if err != nil {
+					log.Fatalf("Error executing command '%s' on host '%s': %v", cmd, name, err)
+				}
+				output.RenderResults(os.Stdout, results, fmt.Sprintf("Output of '%s' on %s", cmd, name), true)
 			}
-		} else if connType == "netconf" {
-			netconfOpts := &netconf.Options{}
-			if err := mapstructureDecode(opts, netconfOpts); err == nil {
-				connOptions["netconf"] = netconfOpts
-			}
+		} else {
+			log.Printf("No commands to execute for host '%s'.", name)
 		}
-		log.Printf("Warning: Unknown connection type '%s' for host '%s'", connType, opts)
 	}
-	return connOptions
-}
-
-func createAllGroup(inv *inventory.Inventory) {
-	if _, ok := inv.Groups["all"]; !ok {
-		allGroup := &inventory.Group{Name: "all"}
-		for _, h := range inv.Hosts {
-			allGroup.Hosts = append(allGroup.Hosts, h)
-		}
-		inv.Groups["all"] = allGroup
-	}
-}
-
-// Helper function to decode map[string]interface{} to a struct
-func mapstructureDecode(input map[string]interface{}, output interface{}) error {
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		TagName: "yaml",
-		Result:  output,
-	})
-	if err != nil {
-		return err
-	}
-	return decoder.Decode(input)
 }
