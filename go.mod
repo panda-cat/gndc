@@ -1,4 +1,4 @@
-module panda-cat/gndc
+module github.com/panda-cat/gndc
 
 go 1.12
 
