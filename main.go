@@ -94,6 +94,14 @@ func main() {
 			commandsToExecute = append(commandsToExecute, host.Commands...)
 		}
 
+
+		/*
+		// 添加主机特定的命令，选择覆盖平台默认命令
+		if host.Commands != nil {
+			commandsToExecute = host.Commands
+		}
+		*/
+		
 		if len(commandsToExecute) > 0 {
 			for _, cmd := range commandsToExecute {
 				results, err = gr.RunSync(
