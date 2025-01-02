@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nornir-automation/gornir/pkg/gornir"
-	"github.com/nornir-automation/gornir/pkg/plugins/connection"
-	"github.com/nornir-automation/gornir/pkg/plugins/inventory"
-	"github.com/nornir-automation/gornir/pkg/plugins/logger"
-	"github.com/nornir-automation/gornir/pkg/plugins/output"
-	"github.com/nornir-automation/gornir/pkg/plugins/runner"
-	"github.com/nornir-automation/gornir/pkg/plugins/task"
+	"github.com/panda-cat/gndc/pkg/gornir"
+	"github.com/panda-cat/gndc/pkg/plugins/connection"
+	"github.com/panda-cat/gndc/pkg/plugins/inventory"
+	"github.com/panda-cat/gndc/pkg/plugins/logger"
+	"github.com/panda-cat/gndc/pkg/plugins/output"
+	"github.com/panda-cat/gndc/pkg/plugins/runner"
+	"github.com/panda-cat/gndc/pkg/plugins/task"
 	"gopkg.in/yaml.v3"
 )
 
