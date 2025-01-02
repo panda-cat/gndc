@@ -37,6 +37,8 @@ func main() {
 	log := logger.NewLogrus(false)
 
 	inventoryFile := flag.String("i", "hosts.yaml", "Path to the inventory YAML file")
+	overwriteFlag := flag.Bool("ow", false, "Overwrite platform default commands with host-specific commands")
+	flag.BoolVar(overwriteFlag, "overwrite", false, "Overwrite platform default commands with host-specific commands (long version)")
 	flag.Parse()
 
 	plugin := inventory.FromFile(inventory.YAML, *inventoryFile)
@@ -83,25 +85,22 @@ func main() {
 	for name, host := range inventoryData.Nodes {
 		var commandsToExecute []string
 
-		// 添加平台默认命令
+		// 获取平台默认命令
 		if defaultCommands, ok := inventoryData.PlatformDefaults[host.Platform]; ok {
 			commandsToExecute = append(commandsToExecute, defaultCommands...)
 		}
 
-		// 添加主机特定的命令，可以根据需求选择覆盖还是追加
+		// 处理主机特定的命令
 		if host.Commands != nil {
-			// 这里选择追加主机特定命令
-			commandsToExecute = append(commandsToExecute, host.Commands...)
+			if *overwriteFlag {
+				// 覆盖平台默认命令
+				commandsToExecute = host.Commands
+			} else {
+				// 追加主机特定命令
+				commandsToExecute = append(commandsToExecute, host.Commands...)
+			}
 		}
 
-
-		/*
-		// 添加主机特定的命令，选择覆盖平台默认命令
-		if host.Commands != nil {
-			commandsToExecute = host.Commands
-		}
-		*/
-		
 		if len(commandsToExecute) > 0 {
 			for _, cmd := range commandsToExecute {
 				results, err = gr.RunSync(
