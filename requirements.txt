@@ -1,0 +1,4 @@
+nornir==3.4.0
+nornir-netmiko 
+nornir-scrapli 
+textfsm
