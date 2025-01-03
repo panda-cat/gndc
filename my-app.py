@@ -4,7 +4,7 @@ import datetime
 from nornir import InitNornir
 from nornir.core.task import Task, Result
 from nornir_netmiko import netmiko_send_command, netmiko_send_config
-from nornir_scrapli import send_command
+from nornir_scrapli.tasks import send_command
 from nornir.core.exceptions import ConnectionException
 import yaml
 
