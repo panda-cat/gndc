@@ -1,7 +1,6 @@
 name: Build Multi-Platform Executables
 
-on:
-  [push]
+on: [push]
 
 
 jobs:
