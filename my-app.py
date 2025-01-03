@@ -1,11 +1,11 @@
 from nornir import InitNornir
-from nornir.plugins.tasks.networking import netmiko_send_command
+from nornir_netmiko import netmiko_send_multiline
 import os
 
 def execute_commands(task):
     device_output = ""
     for command in task.host["commands"]:
-        result = task.run(task=netmiko_send_command, command_string=command)
+        result = task.run(task=netmiko_send_multiline, command_string=command)
         device_output += f"Command: {command}\n"
         device_output += result.result
         device_output += "\n" + "-"*40 + "\n"
