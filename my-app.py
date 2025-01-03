@@ -6,7 +6,12 @@ from nornir.core.task import Task, Result
 from nornir_netmiko import netmiko_send_command, netmiko_send_config
 from nornir_scrapli import send_command
 from nornir.core.exceptions import ConnectionException
+from scrapli.driver import register_driver
 import yaml
+
+# 注册社区驱动
+register_driver("huawei_vrp")
+register_driver("h3c_vrp")
 
 def get_commands(task: Task, commands_data):
     """根据设备类型获取要执行的命令列表"""
