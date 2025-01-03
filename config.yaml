@@ -1,0 +1,8 @@
+---
+core:
+  num_workers: 20  # 并发连接数
+logging:
+  enabled: True
+  level: DEBUG
+  to_console: True
+  file: nornir.log
