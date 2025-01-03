@@ -3,13 +3,14 @@ name: Build Multi-Platform Executables
 on:
   [push]
 
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9"] #根据你的需求进行选择
+        python-version: ["3.9"]
 
     steps:
       - name: Checkout code
@@ -20,19 +21,23 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install nornir nornir-netmiko nornir-scrapli pyinstaller
+          pip install nornir nornir-netmiko nornir-scrapli pyinstaller "scrapli[community]"
 
       - name: Build executable with PyInstaller
         run: |
-          pyinstaller --onefile my-app.py
-        #如果需要图标或其它参数
-        #run: |
-        #  pyinstaller --onefile --windowed --icon=icon.ico my-app.py
+          pyinstaller --onefile --hidden-import=nornir_scrapli.driver.core.cisco_iosxr.driver --hidden-import=nornir_scrapli.driver.core.arista_eos.driver --hidden-import=nornir_scrapli.driver.core.juniper_junos.driver --hidden-import=nornir_scrapli.driver.core.cisco_iosxe.driver --hidden-import=nornir_scrapli.driver.core.cisco_nxos.driver --hidden-import=nornir_scrapli.driver.core.huawei_vrp.async_driver --hidden-import=nornir_scrapli.driver.core.h3c_vrp.async_driver --hidden-import=nornir_scrapli.driver.core.paloalto_panos.async_driver --hidden-import=nornir_scrapli.driver.core.fortinet_fortios.async_driver --hidden-import=scrapli_community.huawei.vrp.async_driver --hidden-import=scrapli_community.h3c.vrp.async_driver --hidden-import=scrapli_community.paloalto.panos.async_driver --hidden-import=scrapli_community.fortinet.fortios.async_driver my-app.py
         env:
-          # 解决netmiko在windows下编码问题
           PYTHONUTF8: 1
 
       - name: Rename executable (Windows)
@@ -51,7 +56,8 @@ jobs:
           mv dist/my-app dist/my-app-linux
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: executables-${{ matrix.os }}
           path: dist/
+          if-no-files-found: error
