@@ -6,6 +6,22 @@ from datetime import datetime
 import os
 
 
+nr = InitNornir(
+    runner={
+        "plugin": "threaded",
+        "options": {
+            "num_workers": 100,
+        },
+    },
+    inventory={
+        "plugin": "SimpleInventory",
+        "options": {
+            "host_file": "inventory/hosts.yaml",
+            "group_file": "inventory/groups.yaml"
+        },
+    },
+)
+
 
 # 创建以当前日期命名的文件夹
 today = datetime.now().strftime("%Y-%m-%d")
