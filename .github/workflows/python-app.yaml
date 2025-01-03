@@ -36,8 +36,6 @@ jobs:
       - name: Build executable with PyInstaller
         run: |
           pyinstaller --onefile my-app.py
-          #如果之前添加的几个驱动仍然有问题, 在添加下面的
-          #--hidden-import=nornir_scrapli.driver.core.cisco_iosxr.driver --hidden-import=nornir_scrapli.driver.core.arista_eos.driver --hidden-import=nornir_scrapli.driver.core.juniper_junos.driver --hidden-import=nornir_scrapli.driver.core.cisco_iosxe.driver --hidden-import=nornir_scrapli.driver.core.cisco_nxos.driver
         env:
           PYTHONUTF8: 1
 
