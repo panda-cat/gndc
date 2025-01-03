@@ -1,0 +1,36 @@
+---
+ruckus-icx1:
+  hostname: 192.168.1.4
+  username: admin
+  password: password
+  platform: ruckus_icx  # 使用 Netmiko 支持的平台名称
+  enable_password: enable_password #进入enable需要的密码
+  enable_username: enable_user #进入enable需要的用户名，可选
+  groups:
+    - ruckus
+
+cisco-switch1:
+  hostname: 192.168.1.5
+  username: admin
+  password: password
+  platform: cisco_ios  # 使用 Netmiko 支持的平台名称
+  enable_password: enable_password #进入enable需要的密码
+  groups:
+    - cisco
+
+cisco-switch2:
+  hostname: 192.168.1.6
+  username: admin
+  password: password
+  platform: cisco_ios_telnet  # 针对 Telnet 连接的特殊平台名称
+  enable_password: enable_password #进入enable需要的密码
+  groups:
+    - cisco
+
+linux_server:
+  hostname: 192.168.1.3
+  username: user
+  password: password
+  platform: linux  # 使用 Scrapli 支持的平台名称, 例如 'linux' 或 'generic'
+  groups:
+    - servers
