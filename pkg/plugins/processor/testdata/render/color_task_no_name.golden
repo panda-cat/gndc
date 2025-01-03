@@ -1,7 +1,0 @@
-[34m# dummyTask
-[0m[32m@ host1
-[0m  - done!
-
-[31m@ host2
-[0m  - err: some error
-
