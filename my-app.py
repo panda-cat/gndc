@@ -6,36 +6,7 @@ from nornir.core.task import Task, Result
 from nornir_netmiko import netmiko_send_command, netmiko_send_config
 from nornir_scrapli import send_command
 from nornir.core.exceptions import ConnectionException
-from scrapli.driver import register_driver
-from scrapli_community import (
-    arista_eos,
-    cisco_asa,
-    cisco_iosxr,
-    cisco_iosxe,
-    cisco_nxos,
-    fortinet_fortios,
-    huawei_vrp,
-    h3c_vrp,
-    juniper_junos,
-    nokia_sros,
-    paloalto_panos,
-    juniper_evo
-)
 import yaml
-
-# 注册所有社区驱动
-register_driver("arista_eos")
-register_driver("cisco_asa")
-register_driver("cisco_iosxr")
-register_driver("cisco_iosxe")
-register_driver("cisco_nxos")
-register_driver("fortinet_fortios")
-register_driver("huawei_vrp")
-register_driver("h3c_vrp")
-register_driver("juniper_junos")
-register_driver("nokia_sros")
-register_driver("paloalto_panos")
-register_driver("juniper_evo")
 
 def get_commands(task: Task, commands_data):
     """根据设备类型获取要执行的命令列表"""
@@ -73,7 +44,7 @@ def connect_and_authenticate(task: Task) -> Result:
                 # Ruckus ICX 特殊处理：进入 enable 模式
                 if task.host.get("enable_username"):
                     task.run(task=netmiko_send_config, config_commands=[
-                             "enable", task.host["enable_username"], task.host["enable_password"]])
+                            "enable", task.host["enable_username"], task.host["enable_password"]])
                 else:
                     task.run(task=netmiko_send_config, config_commands=["enable", task.host["enable_password"]])
 
