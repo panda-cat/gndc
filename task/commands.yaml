@@ -1,0 +1,12 @@
+---
+ruckus:
+  - show version
+  - show running-config
+
+cisco:
+  - show version
+  - show interfaces status
+
+servers:
+  - uname -a
+  - df -h
