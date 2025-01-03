@@ -1,8 +1,16 @@
----
-core:
-  num_workers: 20  # 并发连接数
+inventory:
+  plugin: SimpleInventory
+  options:
+    host_file: "inventory/hosts.yaml"
+    group_file: "inventory/groups.yaml"
+    default_file: "inventory/defaults.yaml"
+
+runner:
+  plugin: threaded
+  options:
+    num_workers: 64
+
 logging:
   enabled: True
-  level: DEBUG
-  to_console: True
-  file: nornir.log
+  level: INFO
+  log_file: nornir.log
