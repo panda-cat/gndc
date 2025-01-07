@@ -1,26 +1,37 @@
+import sys
+import logging
 from nornir import InitNornir
-from nornir_netmiko import netmiko_multiline
-import os
+from nornir.core.task import Result
+from nornir_netmiko import netmiko_send_command
+from nornir_utils.plugins.tasks.files import write_file
+
+# 初始化Nornir
+nr = InitNornir(config_file="config.yaml")
+
+# 设置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("nornir")
 
 def execute_commands(task):
-    device_output = ""
-    for command in task.host["commands"]:
-        result = task.run(task=netmiko_multiline, command_string=command)
-        device_output += f"Command: {command}\n"
-        device_output += result.result
-        device_output += "\n" + "-"*40 + "\n"
-    
-    # Save the output to a separate file for each device
-    with open(f"{task.host.hostname}.txt", "w") as file:
-        file.write(f"Device: {task.host.name}\n")
-        file.write(device_output)
+    # 从hosts文件中读取每台设备的命令列表
+    commands = task.host["commands"]
+    results = []
 
-def main():
-    # Initialize Nornir
-    nr = InitNornir(config_file="config.yaml")
+    # 逐条执行命令并保存结果
+    for command in commands:
+        result = task.run(netmiko_send_command, command_string=command)
+        results.append(result.result)
     
-    # Execute commands on each device
+    # 将结果写入文件，以IP地址命名
+    filename = f"{task.host.hostname}.txt"
+    task.run(write_file, content="\n".join(results), filename=filename)
+
+    return Result(host=task.host, result="Commands executed and saved")
+
+# 运行任务
+try:
     nr.run(task=execute_commands)
+except Exception as e:
+    logger.error(f"An error occurred: {str(e)}")
+    sys.exit(1)
 
-if __name__ == "__main__":
-    main()
