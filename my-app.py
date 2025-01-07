@@ -4,6 +4,8 @@ from nornir import InitNornir
 from nornir.core.task import Result
 from nornir_netmiko import netmiko_send_command
 from nornir_utils.plugins.tasks.files import write_file
+from nornir.plugins.inventory.simple import SimpleInventory
+
 
 # 初始化Nornir
 nr = InitNornir(config_file="config.yaml")
